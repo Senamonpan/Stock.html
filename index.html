@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการสต็อกสินค้าในร้าน</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
+        body { background-color: #f8fafc; margin: 0; padding: 0; color: #334155; line-height: 1.6; }
+        .container { max-width: 850px; margin: 30px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); overflow: hidden; padding-bottom: 50px; }
+        
+        /* Header & Clock */
+        .header-banner { padding: 30px 20px; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; text-align: center; }
+        .header-banner h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .live-clock { font-size: 20px; font-weight: 700; margin-top: 10px; background: rgba(255, 255, 255, 0.15); display: inline-block; padding: 2px 15px; border-radius: 30px; }
+        
+        .content-padding { padding: 0 20px; }
+        
+        /* Dashboard สรุปการเงิน */
+        .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 25px; }
+        .dash-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .dash-title { font-size: 13px; color: #64748b; font-weight: 600; }
+        .dash-value { font-size: 18px; font-weight: 700; margin-top: 5px; }
+        .text-blue { color: #2563eb; }
+        .text-green { color: #10b981; }
+        .text-orange { color: #f97316; }
+
+        /* ฟอร์มเพิ่มสินค้า */
+        .creator-box { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 25px; }
+        .creator-title { font-size: 15px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; }
+        .form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-grid-sub { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .input-text { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        .input-text:focus { outline: none; border-color: #2563eb; }
+        
+        /* ปุ่มต่างๆ */
+        .btn { border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; padding: 10px; font-size: 14px; }
+        .btn-primary { background: #2563eb; color: white; width: 100%; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-action { padding: 4px 10px; font-size: 12px; }
+        .btn-plus { background: #dcfce7; color: #16a34a; }
+        .btn-minus { background: #fee2e2; color: #dc2626; }
+        .btn-danger { background: #fee2e2; color: #ef4444; }
+        .btn-danger:hover { background: #fca5a5; }
+        
+        /* ตัวกรองช้อปปิ้งลิสต์ */
+        .filter-zone { margin-top: 25px; display: flex; justify-content: space-between; align-items: center; background: #eff6ff; padding: 12px 15px; border-radius: 8px; border: 1px solid #bfdbfe; }
+        .filter-label { font-size: 14px; font-weight: 600; color: #1e40af; }
+        .switch-box { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+        /* รายการสินค้าในสต็อก */
+        .stock-list { margin-top: 15px; }
+        .product-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
+        .product-card.alert-active { border-left: 5px solid #f97316; background: #fff7ed; }
+        
+        .prod-details { flex: 1; }
+        .prod-name { font-size: 16px; font-weight: 700; color: #1e293b; }
+        .prod-meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-left: 5px; }
+        .badge-alert { background: #ffedd5; color: #ea580c; }
+        .badge-ok { background: #dcfce7; color: #16a34a; }
+        
+        .prod-pricing { font-size: 13px; color: #334155; margin-top: 4px; font-weight: 600; }
+        .profit-text { color: #10b981; font-weight: 700; }
+
+        .prod-actions { display: flex; align-items: center; gap: 10px; }
+        .stock-counter { display: flex; align-items: center; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .stock-num { font-size: 15px; font-weight: 700; min-width: 30px; text-align: center; }
+
+        /* ปรับแต่งสำหรับมือถือ */
+        @media (max-width: 768px) {
+            .container { margin: 0; border-radius: 0; }
+            .dashboard { grid-template-columns: 1fr; gap: 10px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-grid-sub { grid-template-columns: 1fr 1fr; }
+            .product-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .prod-actions { width: 100%; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-banner">
+            <h1 id="storeTitle">ระบบจัดการสต็อกและคำนวณกำไรประจำร้าน</h1>
+            <div id="liveClock" class="live-clock">00:00:00</div>
+        </div>
+
+        <div class="content-padding">
+            
+            <div class="dashboard">
+                <div class="dash-card">
+                    <div class="dash-title">มูลค่าสินค้าในสต็อกรวม (ทุน)</div>
+                    <div id="totalCostVal" class="dash-value text-blue">0.00 บาท</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-title">คาดการณ์กำไรทั้งหมดรวม</div>
+                    <div id="totalProfitVal" class="dash-value text-green">0.00 บาท</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-title">รายการสินค้าที่ต้องซื้อเพิ่ม</div>
+                    <div id="totalAlertCount" class="dash-value text-orange">0 รายการ</div>
+                </div>
+            </div>
+
+            <div class="creator-box">
+                <div class="creator-title">✨ เพิ่มสินค้าใหม่เข้าคลังสต็อก</div>
+                <div class="form-grid">
+                    <input type="text" id="prodName" class="input-text" placeholder="ชื่อสินค้า เช่น นมกล่องจืด, ปลากระป๋อง">
+                    <input type="number" id="prodCost" class="input-text" placeholder="ราคาทุนต่อชิ้น (บาท)" step="0.01">
+                    <input type="number" id="prodPrice" class="input-text" placeholder="ราคาขายต่อชิ้น (บาท)" step="0.01">
+                </div>
+                <div class="form-grid-sub">
+                    <input type="number" id="prodStock" class="input-text" placeholder="จำนวนที่มีในร้านตอนนี้">
+                    <input type="number" id="prodMin" class="input-text" placeholder="ขั้นต่ำที่ต้องมี (หมดต้องซื้อเพิ่ม)">
+                    <button onclick="addProduct()" class="btn btn-primary">➕ บันทึกสินค้า</button>
+                </div>
+            </div>
+
+            <div class="filter-zone">
+                <div class="filter-label">📦 รายการสินค้าทั้งหมดในระบบ</div>
+                <label class="switch-box">
+                    <input type="checkbox" id="shoppingModeToggle" onchange="renderStock()"> 
+                    🛒 โหมดไปซื้อของ (แสดงเฉพาะรายการที่ต้องซื้อเพิ่ม)
+                </label>
+            </div>
+
+            <div id="stockListContainer" class="stock-list"></div>
+
+        </div>
+    </div>
+
+    <script>
+        // โครงสร้างฐานข้อมูลคลังสต็อกใน LocalStorage 
+        let StockData = JSON.parse(localStorage.getItem('shop_stock_app_data')) || [];
+
+        function saveAndRefresh() {
+            localStorage.setItem('shop_stock_app_data', JSON.stringify(StockData));
+            calculateDashboard();
+            renderStock();
+        }
+
+        // ฟังก์ชันคำนวณสรุปผลการเงินบนแดชบอร์ดอัตโนมัติ
+        function calculateDashboard() {
+            let totalCostValue = 0;
+            let totalProfitValue = 0;
+            let alertItemsCount = 0;
+
+            StockData.forEach(prod => {
+                totalCostValue += (prod.cost * prod.stock);
+                totalProfitValue += ((prod.price - prod.cost) * prod.stock);
+                if (prod.stock <= prod.minStock) {
+                    alertItemsCount++;
+                }
+            });
+
+            document.getElementById('totalCostVal').textContent = totalCostValue.toFixed(2) + ' บาท';
+            document.getElementById('totalProfitVal').textContent = totalProfitValue.toFixed(2) + ' บาท';
+            document.getElementById('totalAlertCount').textContent = alertItemsCount + ' รายการ';
+        }
+
+        // ฟังก์ชันเพิ่มสินค้าใหม่
+        function addProduct() {
+            const name = document.getElementById('prodName').value.trim();
+            const cost = parseFloat(document.getElementById('prodCost').value) || 0;
+            const price = parseFloat(document.getElementById('prodPrice').value) || 0;
+            const stock = parseInt(document.getElementById('prodStock').value) || 0;
+            const minStock = parseInt(document.getElementById('prodMin').value) || 0;
+
+            if (name === '') { alert('กรุณากรอกชื่อสินค้าด้วยครับ'); return; }
+            if (cost > price) { alert('⚠️ คำเตือน: ตั้งราคาทุนสูงกว่าราคาขาย ระวังขาดทุนนะครับ'); }
+
+            StockData.push({
+                id: 'prod_' + Date.now(),
+                name: name,
+                cost: cost,
+                price: price,
+                stock: stock,
+                minStock: minStock
+            });
+
+            saveAndRefresh();
+            
+            // เคลียร์ค่าในช่องพิมพ์ออก
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodCost').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStock').value = '';
+            document.getElementById('prodMin').value = '';
+        }
+
+        // ฟังก์ชันปรับจำนวนสต็อกสินค้าอย่างรวดเร็วด้วยปุ่ม + และ -
+        function adjustStock(id, amount) {
+            const prod = StockData.find(p => p.id === id);
+            if (prod) {
+                prod.stock = Math.max(0, prod.stock + amount); // ไม่ยอมให้สต็อกติดลบ
+                saveAndRefresh();
+            }
+        }
+
+        // ฟังก์ชันลบสินค้าออกจากระบบ
+        function deleteProduct(id) {
+            if (confirm('คุณต้องการลบสินค้ารายการนี้ออกจากระบบใช่หรือไม่?')) {
+                StockData = StockData.filter(p => p.id !== id);
+                saveAndRefresh();
+            }
+        }
+
+        // ฟังก์ชันวาดรายการสต็อกสินค้าทั้งหมดบนหน้าจอ
+        function renderStock() {
+            const container = document.getElementById('stockListContainer');
+            const isShoppingMode = document.getElementById('shoppingModeToggle').checked;
+            container.innerHTML = '';
+
+            if (StockData.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#94a3b8; padding-top:30px; font-size:14px; font-style:italic;">ยังไม่มีสินค้าในคลังสต็อก เริ่มเพิ่มสินค้าที่ฟอร์มด้านบนได้เลยครับ</p>`;
+                return;
+            }
+
+            let hasDisplayItems = false;
+
+            StockData.forEach(prod => {
+                const isAlert = prod.stock <= prod.minStock;
+                const toBuyAmount = Math.max(0, prod.minStock - prod.stock); // จำนวนที่ต้องซื้อเพิ่ม
+
+                // ถ้าเปิดโหมดซื้อของอยู่ แต่ของชิ้นนี้ยังมีพอ ไม่ต้องแสดงผล
+                if (isShoppingMode && !isAlert) return;
+
+                hasDisplayItems = true;
+                const profitPerPiece = prod.price - prod.cost;
+
+                const card = document.createElement('div');
+                card.className = `product-card ${isAlert ? 'alert-active' : ''}`;
+
+                card.innerHTML = `
+                    <div class="prod-details">
+                        <div class="prod-name">
+                            ${prod.name}
+                            ${isAlert ? `<span class="badge badge-alert">ต้องซื้อเพิ่ม ${toBuyAmount} ชิ้น</span>` : `<span class="badge badge-ok">ปกติ</span>`}
+                        </div>
+                        <div class="prod-meta">
+                            คงเหลือในร้าน: <strong>${prod.stock}</strong> ชิ้น / ขั้นต่ำที่กำหนดไว้: ${prod.minStock} ชิ้น
+                        </div>
+                        <div class="prod-pricing">
+                            ทุน: ${prod.cost.toFixed(2)} บ. | ขาย: ${prod.price.toFixed(2)} บ. | 
+                            กำไรชิ้นละ: <span class="profit-text">${profitPerPiece.toFixed(2)} บ.</span>
+                        </div>
+                    </div>
+                    <div class="prod-actions">
+                        <div class="stock-counter">
+                            <button onclick="adjustStock('${prod.id}', -1)" class="btn btn-action btn-minus">-/b></button>
+                            <span class="stock-num">${prod.stock}</span>
+                            <button onclick="adjustStock('${prod.id}', 1)" class="btn btn-action btn-plus">+</button>
+                        </div>
+                        <button onclick="deleteProduct('${prod.id}')" class="btn btn-action btn-danger" style="padding: 6px 10px;">ลบ</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (isShoppingMode && !hasDisplayItems) {
+                container.innerHTML = `<p style="text-align:center; color:#16a34a; padding-top:30px; font-size:14px; font-weight:600;">🎉 ยอดเยี่ยม! ตอนนี้สินค้าทุกอย่างในร้านมีจำนวนเพียงพอ ไม่มีอะไรต้องซื้อเพิ่มครับ</p>`;
+            }
+        }
+
+        // ระบบนาฬิกา Real-time ตัวเดิมที่ชอบ
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('liveClock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // รันระบบเริ่มต้นทั้งหมดทันทีเมื่อเปิดแอปพลิเคชันเว็บ
+        calculateDashboard();
+        renderStock();
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
